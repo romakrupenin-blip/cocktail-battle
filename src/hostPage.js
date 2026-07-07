@@ -74,9 +74,10 @@ function escAttr(s){ return esc(s); }
 
 // ---------- LOCAL MUTATIONS (оптимистично обновляем локально + отправляем на сервер) ----------
 function addParticipant(){
-  state.participants.push({ id: 'tmp'+Date.now(), name:'', cocktail:'', photo:'' });
   send({type:'addParticipant'});
-  render();
+  // Не добавляем строку локально с временным ID — ждём подтверждения от
+  // сервера с настоящим ID, чтобы дальнейший ввод в новую строку точно
+  // долетал до сервера (иначе TV мог не видеть данные этого участника).
 }
 function removeParticipant(id){
   if(state.participants.length <= 3) return;

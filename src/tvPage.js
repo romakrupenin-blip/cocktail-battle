@@ -168,10 +168,11 @@ function render(){
     showStage('stage-setup');
     document.getElementById('setupPartyName').textContent = state.partyName.trim() || 'Cocktail Battle';
     document.getElementById('setupCount').textContent = state.participants.length;
-    const ready = state.participants.filter(p=>p.name.trim() && p.cocktail.trim());
-    document.getElementById('setupChips').innerHTML = ready.map(p =>
-      '<div class="chip">' + esc(p.cocktail) + '<span class="who">' + esc(p.name) + '</span></div>'
-    ).join('');
+    document.getElementById('setupChips').innerHTML = state.participants.map((p, idx) => {
+      const cocktail = p.cocktail && p.cocktail.trim() ? esc(p.cocktail) : '<span style="opacity:.4">Коктейль №'+(idx+1)+'</span>';
+      const name = p.name && p.name.trim() ? esc(p.name) : '<span style="opacity:.4">имя не введено</span>';
+      return '<div class="chip">' + cocktail + '<span class="who">' + name + '</span></div>';
+    }).join('');
     return;
   }
 
