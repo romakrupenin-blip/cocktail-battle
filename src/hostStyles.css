@@ -1,0 +1,275 @@
+
+  :root{
+    --bg: #FCF7F4;
+    --bg-card: #FFFFFF;
+    --bg-card-2: #FFF1F3;
+    --line: #EDDBDF;
+    --gold: #F5495F;
+    --gold-soft: #17A5AE;
+    --red: #E23B54;
+    --green: #0E8A8F;
+    --cream: #332B2C;
+    --muted: #9C8B8D;
+    --shadow: 0 8px 24px rgba(50,20,30,.08);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: radial-gradient(circle at 50% -10%, #FFFFFF 0%, var(--bg) 60%);
+    color: var(--cream);
+    font-family:'Work Sans', sans-serif;
+    min-height:100vh;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .app{
+    max-width: 480px;
+    margin: 0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    padding: 18px 16px 40px;
+  }
+  .topbar{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding-bottom:14px;
+    margin-bottom:18px;
+    border-bottom: 1px solid var(--line);
+  }
+  .logo-wrap{
+    width:46px;height:46px;flex:0 0 auto;
+    border-radius:50%;
+    background: linear-gradient(160deg, #FFE3E8, #DFF5F6);
+    display:flex;align-items:center;justify-content:center;
+    border:1px solid var(--line);
+  }
+  .logo-wrap svg{width:26px;height:26px;}
+  .brand{display:flex;flex-direction:column;min-width:0;}
+  .eyebrow{
+    font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+    color: var(--gold); font-weight:600;
+  }
+  h1{
+    font-family:'Big Shoulders Display', sans-serif;
+    font-weight:800;
+    font-size:26px;
+    line-height:1;
+    margin:2px 0 0;
+    color: var(--cream);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .screen{display:none; flex-direction:column; gap:16px; flex:1;}
+  .screen.active{display:flex;}
+
+  .field{display:flex; flex-direction:column; gap:6px;}
+  .field label{font-size:13px; color:var(--gold-soft); font-weight:700; text-transform:uppercase; letter-spacing:.08em;}
+  input[type=text]{
+    background: var(--bg-card);
+    border:1px solid var(--line);
+    color: var(--cream);
+    font-family:'Work Sans', sans-serif;
+    font-size:16px;
+    padding:12px 14px;
+    border-radius:10px;
+    outline:none;
+    width:100%;
+  }
+  input[type=text]:focus{border-color: var(--gold);}
+  input[type=text]::placeholder{color:#C9B7B9;}
+
+  .section-title{
+    font-family:'Big Shoulders Display', sans-serif;
+    font-size:19px; font-weight:700;
+    color: var(--gold-soft);
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom: -6px;
+  }
+  .counter-pill{
+    font-family:'Work Sans', sans-serif;
+    font-size:12px; font-weight:600; color:var(--muted);
+    background: var(--bg-card); border:1px solid var(--line);
+    padding:3px 9px; border-radius:999px;
+  }
+
+  .participant-row{
+    display:flex; gap:8px; align-items:center;
+    background: var(--bg-card);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:10px;
+  }
+  .participant-row .idx{
+    font-family:'Big Shoulders Display', sans-serif;
+    color: var(--gold);
+    font-size:20px; width:22px; text-align:center; flex:0 0 auto;
+  }
+  .photo-upload{
+    flex:0 0 auto; width:44px; height:44px; border-radius:10px;
+    border:1px dashed var(--line); background:var(--bg-card-2);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; overflow:hidden; position:relative;
+  }
+  .photo-upload img{width:100%; height:100%; object-fit:cover;}
+  .photo-upload svg{width:18px; height:18px;}
+  .photo-upload input[type=file]{
+    position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%;
+  }
+  .participant-row .inputs{display:flex; flex-direction:column; gap:6px; flex:1; min-width:0;}
+  .participant-row input{padding:8px 10px; font-size:14px;}
+  .remove-btn{
+    flex:0 0 auto; width:32px;height:32px; border-radius:8px;
+    background:transparent; border:1px solid var(--line); color:var(--muted);
+    font-size:16px; cursor:pointer;
+  }
+  .remove-btn:disabled{opacity:.3;}
+
+  .btn{
+    border:none; border-radius:12px; padding:14px 18px;
+    font-family:'Work Sans', sans-serif; font-weight:600; font-size:15px;
+    cursor:pointer; width:100%;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn-primary{ background: linear-gradient(135deg, var(--gold-soft), var(--gold)); color:#FFFFFF; }
+  .btn-primary:disabled{ background:#E7DEDD; color:#B3A6A8; cursor:not-allowed; }
+  .btn-ghost{ background: var(--bg-card); border:1px solid var(--line); color:var(--cream); }
+  .btn-outline-add{
+    background:transparent; border:1px dashed var(--line); color:var(--gold-soft);
+    padding:12px; font-size:14px;
+  }
+  .btn-row{display:flex; gap:10px;}
+  .btn-row .btn{flex:1;}
+
+  .top-nav{display:flex; gap:10px;}
+  .top-nav .btn{padding:10px; font-size:13px;}
+
+  .hint{font-size:12px; color:var(--muted); line-height:1.5;}
+  .start-hint{
+    font-size:12px; font-weight:600; text-align:center;
+    color: var(--red); padding:2px 0;
+  }
+  .start-hint.ok{ color: var(--green); }
+
+  /* scoring cards */
+  .cocktail-card{
+    background: var(--bg-card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px;
+  }
+  .cocktail-head{
+    display:flex; justify-content:space-between; align-items:center; cursor:pointer;
+    gap:10px;
+  }
+  .cocktail-name{
+    font-family:'Big Shoulders Display', sans-serif;
+    font-size:20px; font-weight:700; color:var(--cream);
+  }
+  .cocktail-author{font-size:12px; color:var(--muted); margin-top:2px;}
+  .cocktail-thumb{
+    width:40px; height:40px; border-radius:9px; object-fit:cover; flex:0 0 auto;
+    border:1px solid var(--line);
+  }
+  .cocktail-thumb-large{
+    width:160px; height:160px; border-radius:14px; object-fit:cover;
+    border:1px solid var(--line); display:block; margin:0 auto 14px;
+    cursor:pointer; box-shadow: var(--shadow);
+  }
+  .lightbox{
+    display:none; position:fixed; inset:0; background:rgba(20,14,12,.85);
+    z-index:999; align-items:center; justify-content:center; padding:24px;
+  }
+  .lightbox.open{display:flex;}
+  .lightbox img{
+    max-width:100%; max-height:100%; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,.5);
+  }
+  .cocktail-head-main{display:flex; align-items:center; gap:10px; min-width:0;}
+  .cocktail-text{min-width:0;}
+  .cocktail-name{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .progress-pill{
+    font-size:12px; font-weight:600; padding:4px 10px; border-radius:999px;
+    background:#E3F6F6; color: var(--green); border:1px solid #BEE7E7;
+    white-space:nowrap;
+  }
+  .progress-pill.done{ background:#FFE3E8; color:var(--gold); border-color:#FBC6D0; }
+  .chevron{transition: transform .2s ease; color:var(--muted);}
+  .cocktail-card.open .chevron{transform: rotate(180deg);}
+  .rater-list{margin-top:14px; display:none; flex-direction:column; gap:12px;}
+  .cocktail-card.open .rater-list{display:flex;}
+  .rater-row{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    padding-top:12px; border-top:1px solid var(--line);
+  }
+  .rater-row:first-child{border-top:none; padding-top:0;}
+  .rater-name{font-size:14px; font-weight:500;}
+
+  .stars{display:flex; gap:2px;}
+  .star-slot{position:relative; width:26px; height:26px;}
+  .star-slot svg{position:absolute; top:2px; left:1px; width:24px; height:24px;}
+  .star-bg path{fill:none; stroke:#DDD0CE; stroke-width:1.4;}
+  .star-fill path{fill: var(--gold); stroke:var(--gold); stroke-width:1.4;}
+  .hit{position:absolute; top:0; width:50%; height:100%; cursor:pointer;}
+  .hit-left{left:0;}
+  .hit-right{right:0;}
+
+  .btn-primary.full-width{margin-top:4px;}
+
+  /* results */
+  .winner-banner{
+    background: linear-gradient(135deg, #FFE9EC, #E1F6F7);
+    border:1px solid #F5CBD3;
+    border-radius:16px;
+    padding:20px;
+    text-align:center;
+  }
+  .winner-banner .medal{font-size:136px; line-height:1;}
+  .winner-title{
+    font-family:'Big Shoulders Display', sans-serif;
+    font-size:22px; font-weight:900; letter-spacing:.04em;
+    color: var(--gold); margin-bottom:6px;
+  }
+  .winner-photo{
+    width:192px; height:192px; border-radius:50%; object-fit:cover;
+    border:3px solid #FFFFFF; box-shadow: var(--shadow);
+    margin:0 auto 8px;
+  }
+  .winner-photo-wrap{position:relative; width:192px; margin:0 auto;}
+  .winner-photo-wrap .medal-badge{
+    position:absolute; right:-24px; bottom:-18px; font-size:88px; line-height:1;
+  }
+  .winner-banner .wname{
+    font-family:'Big Shoulders Display', sans-serif;
+    font-size:26px; font-weight:800; color: var(--gold-soft); margin-top:4px;
+  }
+  .winner-banner .wcocktail{font-size:14px; color:var(--cream); margin-top:2px;}
+  .winner-banner .wscore{font-size:12px; color:var(--muted); margin-top:6px;}
+
+  table.leaderboard{width:100%; border-collapse:collapse; font-size:13px;}
+  table.leaderboard th{
+    text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--muted); padding:6px 8px; border-bottom:1px solid var(--line);
+  }
+  table.leaderboard td{padding:10px 8px; border-bottom:1px solid var(--line); vertical-align:middle;}
+  table.leaderboard tr:last-child td{border-bottom:none;}
+  .rank{font-family:'Big Shoulders Display', sans-serif; font-size:18px; color:var(--gold);}
+  .lb-cocktail{font-weight:600;}
+  .lb-thumb{width:32px; height:32px; border-radius:8px; object-fit:cover; border:1px solid var(--line); flex:0 0 auto;}
+  .lb-cell-main{display:flex; align-items:center; gap:8px;}
+  .lb-author{color:var(--muted); font-size:12px;}
+  .lb-sum{font-family:'Big Shoulders Display', sans-serif; font-size:16px; color:var(--muted); text-align:right;}
+  .lb-avg{font-family:'Big Shoulders Display', sans-serif; font-size:18px; color:var(--gold-soft); text-align:right;}
+  .lb-count{color:var(--muted); font-size:11px; text-align:right;}
+
+  .empty-note{
+    text-align:center; color:var(--muted); font-size:13px; padding:20px 10px;
+  }
+
+  .conn-banner{
+    position:fixed; top:0; left:0; right:0; z-index:500;
+    background:#F5495F; color:#fff; text-align:center; font-size:13px; font-weight:600;
+    padding:8px; display:none;
+  }
+  .conn-banner.show{display:block;}
+  .room-badge{
+    font-size:11px; color:var(--muted); text-align:center; margin-top:-6px; margin-bottom:6px;
+  }
