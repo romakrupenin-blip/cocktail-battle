@@ -124,17 +124,36 @@ let state = null;
 let hostConnected = false;
 let ws = null;
 let reconnectDelay = 1000;
+let lastActivity = Date.now();
+let pingTimer = null;
+let watchdogTimer = null;
 
 function esc(s){ return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+function startHeartbeat(){
+  clearInterval(pingTimer);
+  clearInterval(watchdogTimer);
+  pingTimer = setInterval(() => {
+    if(ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({type:'ping'}));
+  }, 15000);
+  watchdogTimer = setInterval(() => {
+    if(Date.now() - lastActivity > 25000){
+      console.warn('Соединение выглядит "зависшим", переподключаюсь...');
+      try{ ws.close(); }catch(e){}
+    }
+  }, 5000);
+}
 
 function connect(){
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   ws = new WebSocket(proto + '//' + location.host + '/room/' + ROOM_CODE + '/ws?role=tv');
-  ws.onopen = () => { document.getElementById('connDot').classList.add('live'); reconnectDelay = 1000; };
-  ws.onclose = () => { document.getElementById('connDot').classList.remove('live'); setTimeout(connect, reconnectDelay); reconnectDelay = Math.min(reconnectDelay*1.5, 8000); };
+  ws.onopen = () => { document.getElementById('connDot').classList.add('live'); reconnectDelay = 1000; lastActivity = Date.now(); startHeartbeat(); };
+  ws.onclose = () => { document.getElementById('connDot').classList.remove('live'); clearInterval(pingTimer); clearInterval(watchdogTimer); setTimeout(connect, reconnectDelay); reconnectDelay = Math.min(reconnectDelay*1.5, 8000); };
   ws.onerror = () => { try{ ws.close(); }catch(e){} };
   ws.onmessage = (evt) => {
+    lastActivity = Date.now();
     const msg = JSON.parse(evt.data);
+    if(msg.type === 'pong') return;
     if(msg.type === 'state'){ state = msg.data; hostConnected = msg.hostConnected; render(); }
     else if(msg.type === 'meta'){ hostConnected = msg.hostConnected; render(); }
   };

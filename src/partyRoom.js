@@ -34,7 +34,11 @@ export class PartyRoom {
     this.sendTo(session, { type: 'state', data: this.data, hostConnected: this.hostConnected() });
     this.broadcastMeta();
 
-    server.addEventListener('message', (evt) => this.onMessage(session, evt));
+    server.addEventListener('message', (evt) => {
+      this.onMessage(session, evt).catch(err => {
+        console.error('Unhandled onMessage error:', err);
+      });
+    });
     const cleanup = () => { this.sessions.delete(session); this.broadcastMeta(); };
     server.addEventListener('close', cleanup);
     server.addEventListener('error', cleanup);
@@ -48,15 +52,28 @@ export class PartyRoom {
   }
 
   async onMessage(session, evt) {
-    // Только ведущий (role=host) может менять состояние — ТВ всегда read-only.
-    if (session.role !== 'host') return;
     let action;
     try { action = JSON.parse(evt.data); } catch (e) { return; }
     if (!action || typeof action.type !== 'string') return;
 
-    applyAction(this.data, action);
-    await this.ctx.storage.put('data', this.data);
-    this.broadcastState();
+    if (action.type === 'ping') {
+      this.sendTo(session, { type: 'pong' });
+      return;
+    }
+
+    // Только ведущий (role=host) может менять состояние — ТВ всегда read-only.
+    if (session.role !== 'host') return;
+
+    try {
+      applyAction(this.data, action);
+      await this.ctx.storage.put('data', this.data);
+      this.broadcastState();
+    } catch (err) {
+      // Не даём одному сбойному действию "уронить" всю комнату молча —
+      // логируем и сообщаем самому отправителю, остальные подключения не рвём.
+      console.error('applyAction/storage error for action', action && action.type, err);
+      this.sendTo(session, { type: 'error', message: String(err && err.message || err) });
+    }
   }
 
   sendTo(session, payload) {

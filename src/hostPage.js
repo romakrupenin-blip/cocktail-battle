@@ -43,15 +43,34 @@ const ROOM_CODE = ${JSON.stringify(roomCode)};
 let state = null;
 let ws = null;
 let reconnectDelay = 1000;
+let lastActivity = Date.now();
+let pingTimer = null;
+let watchdogTimer = null;
+
+function startHeartbeat(){
+  clearInterval(pingTimer);
+  clearInterval(watchdogTimer);
+  pingTimer = setInterval(() => {
+    if(ws && ws.readyState === WebSocket.OPEN) send({type:'ping'});
+  }, 15000);
+  watchdogTimer = setInterval(() => {
+    if(Date.now() - lastActivity > 25000){
+      console.warn('Соединение выглядит "зависшим", переподключаюсь...');
+      try{ ws.close(); }catch(e){}
+    }
+  }, 5000);
+}
 
 function connect(){
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   ws = new WebSocket(proto + '//' + location.host + '/room/' + ROOM_CODE + '/ws?role=host');
-  ws.onopen = () => { document.getElementById('connBanner').classList.remove('show'); reconnectDelay = 1000; };
-  ws.onclose = () => { document.getElementById('connBanner').classList.add('show'); setTimeout(connect, reconnectDelay); reconnectDelay = Math.min(reconnectDelay*1.5, 8000); };
+  ws.onopen = () => { document.getElementById('connBanner').classList.remove('show'); reconnectDelay = 1000; lastActivity = Date.now(); startHeartbeat(); };
+  ws.onclose = () => { document.getElementById('connBanner').classList.add('show'); clearInterval(pingTimer); clearInterval(watchdogTimer); setTimeout(connect, reconnectDelay); reconnectDelay = Math.min(reconnectDelay*1.5, 8000); };
   ws.onerror = () => { try{ ws.close(); }catch(e){} };
   ws.onmessage = (evt) => {
+    lastActivity = Date.now();
     const msg = JSON.parse(evt.data);
+    if(msg.type === 'pong') return;
     if(msg.type === 'state'){
       const firstLoad = (state === null);
       state = msg.data;
@@ -72,6 +91,27 @@ function send(action){
 function esc(s){ return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 function escAttr(s){ return esc(s); }
 
+// ---------- DEBOUNCE (не заваливаем сервер/ТВ на каждую букву при печати) ----------
+let pendingTimers = {};
+let pendingActions = {};
+function debouncedSend(key, action, delay){
+  pendingActions[key] = action;
+  clearTimeout(pendingTimers[key]);
+  pendingTimers[key] = setTimeout(() => {
+    send(pendingActions[key]);
+    delete pendingActions[key];
+    delete pendingTimers[key];
+  }, delay || 350);
+}
+function flushPending(){
+  Object.keys(pendingTimers).forEach(key => {
+    clearTimeout(pendingTimers[key]);
+    send(pendingActions[key]);
+    delete pendingActions[key];
+    delete pendingTimers[key];
+  });
+}
+
 // ---------- LOCAL MUTATIONS (оптимистично обновляем локально + отправляем на сервер) ----------
 function addParticipant(){
   send({type:'addParticipant'});
@@ -88,7 +128,7 @@ function removeParticipant(id){
 function updateParticipant(id, field, value){
   const p = state.participants.find(p=>p.id===id);
   if(p) p[field] = value;
-  send({type:'updateParticipant', id, field, value});
+  debouncedSend('participant_'+id+'_'+field, {type:'updateParticipant', id, field, value});
 }
 function handlePhotoChange(id, input){
   const file = input.files && input.files[0];
@@ -115,7 +155,7 @@ function handlePhotoChange(id, input){
 function updatePartyName(value){
   state.partyName = value;
   document.getElementById('partyTitle').textContent = value.trim() || 'Вечеринка коктейлей';
-  send({type:'updatePartyName', value});
+  debouncedSend('partyName', {type:'updatePartyName', value});
 }
 function canStart(){
   if(state.participants.length < 3) return false;
@@ -133,16 +173,19 @@ function startHintText(){
 }
 function startScoring(){
   if(!canStart()) return;
+  flushPending();
   state.view = 'scoring';
   state.expanded = state.participants[0].id;
   send({type:'startScoring'});
   render();
 }
 function newParty(){
+  flushPending();
   send({type:'newParty'});
   // ждём подтверждения с сервера (там же пересоздаются id участников) — не мутируем локально
 }
 function toggleCard(id){
+  flushPending();
   state.expanded = (state.expanded === id) ? null : id;
   send({type:'toggleCard', id});
   render();
@@ -175,6 +218,7 @@ function missingRatingsCount(){
 }
 function goToResults(){
   if(!allRatingsDone()) return;
+  flushPending();
   state.view = 'results';
   send({type:'goToResults'});
   render();
@@ -188,8 +232,8 @@ function computeResults(){
     return { author, sum, avg, count: rated.length, total: ratings.length };
   }).sort((a,b)=> b.avg - a.avg || b.sum - a.sum);
 }
-function backToSetup(){ state.view='setup'; send({type:'backToSetup'}); render(); }
-function backToScoring(){ state.view='scoring'; send({type:'backToScoring'}); render(); }
+function backToSetup(){ flushPending(); state.view='setup'; send({type:'backToSetup'}); render(); }
+function backToScoring(){ flushPending(); state.view='scoring'; send({type:'backToScoring'}); render(); }
 
 // ---------- STAR RENDERING ----------
 const STAR_PATH = "M12 2.6l2.85 6.2 6.75.62-5.1 4.55 1.52 6.63L12 17.9l-6.02 3.7 1.52-6.63-5.1-4.55 6.75-.62L12 2.6z";
@@ -228,9 +272,11 @@ function renderSetup(){
       </label>
       <div class="inputs">
         <input type="text" placeholder="Имя участника" value="\${escAttr(p.name)}"
-          oninput="updateParticipant('\${p.id}','name',this.value); document.getElementById('startBtn').disabled=!canStart(); document.getElementById('startHint').textContent=startHintText(); document.getElementById('startHint').classList.toggle('ok', canStart());">
+          oninput="updateParticipant('\${p.id}','name',this.value); document.getElementById('startBtn').disabled=!canStart(); document.getElementById('startHint').textContent=startHintText(); document.getElementById('startHint').classList.toggle('ok', canStart());"
+          onblur="flushPending()">
         <input type="text" placeholder="Название коктейля" value="\${escAttr(p.cocktail)}"
-          oninput="updateParticipant('\${p.id}','cocktail',this.value); document.getElementById('startBtn').disabled=!canStart(); document.getElementById('startHint').textContent=startHintText(); document.getElementById('startHint').classList.toggle('ok', canStart());">
+          oninput="updateParticipant('\${p.id}','cocktail',this.value); document.getElementById('startBtn').disabled=!canStart(); document.getElementById('startHint').textContent=startHintText(); document.getElementById('startHint').classList.toggle('ok', canStart());"
+          onblur="flushPending()">
       </div>
       <button class="remove-btn" onclick="removeParticipant('\${p.id}')" \${state.participants.length<=3?'disabled':''}>✕</button>
     </div>
@@ -241,7 +287,7 @@ function renderSetup(){
       <div class="field">
         <label>Название вечеринки</label>
         <input type="text" placeholder="Например: Коктейльный вечер у Наташи" value="\${escAttr(state.partyName)}"
-          oninput="updatePartyName(this.value)">
+          oninput="updatePartyName(this.value)" onblur="flushPending()">
       </div>
 
       <div class="section-title">
@@ -377,6 +423,10 @@ function renderResults(){
 }
 
 connect();
+
+document.addEventListener('visibilitychange', () => {
+  if(document.hidden) flushPending();
+});
 </script>
 </body>
 </html>`;
