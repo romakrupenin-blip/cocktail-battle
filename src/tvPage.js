@@ -45,9 +45,19 @@ export function tvPage(code, qrSvg) {
   /* setup */
   .party-count{font-family:'Big Shoulders Display', sans-serif; font-size:120px; font-weight:900; color:var(--turquoise); line-height:1;}
   .party-count-label{font-size:26px; color:var(--muted); margin-top:6px;}
-  .chip-row{display:flex; flex-wrap:wrap; gap:14px; justify-content:center; margin-top:34px; max-width:1100px;}
-  .chip{background:#fff; border:1px solid var(--line); border-radius:16px; padding:14px 22px; font-size:22px; font-weight:600;}
-  .chip .who{color:var(--muted); font-weight:500; font-size:16px; display:block; margin-top:2px;}
+  .chip-row{display:flex; flex-wrap:wrap; gap:20px; justify-content:center; margin-top:34px; max-width:1200px;}
+  .chip{
+    background:#fff; border:1px solid var(--line); border-radius:20px; padding:16px;
+    width:200px; display:flex; flex-direction:column; align-items:center; text-align:center;
+  }
+  .chip-photo{width:160px; height:160px; border-radius:16px; object-fit:cover; margin-bottom:12px;}
+  .chip-photo-placeholder{
+    width:160px; height:160px; border-radius:16px; margin-bottom:12px;
+    background:linear-gradient(135deg,#FFE3E8,#DFF5F6); display:flex; align-items:center; justify-content:center;
+    font-size:40px;
+  }
+  .chip .cocktail-name-line{font-size:20px; font-weight:700;}
+  .chip .who{color:var(--muted); font-weight:500; font-size:15px; display:block; margin-top:4px;}
 
   /* scoring spotlight */
   .spot-photo{width:340px; height:340px; border-radius:32px; object-fit:cover; box-shadow:0 24px 70px rgba(0,0,0,.14); margin-bottom:30px;}
@@ -64,17 +74,17 @@ export function tvPage(code, qrSvg) {
 
   /* results */
   .win-title{font-family:'Big Shoulders Display', sans-serif; font-size:40px; font-weight:900; color:var(--pink); letter-spacing:.05em; margin-bottom:14px;}
-  .win-photo{width:260px; height:260px; border-radius:50%; object-fit:cover; border:6px solid #fff; box-shadow:0 20px 60px rgba(0,0,0,.15);}
-  .win-medal{font-size:180px; line-height:1;}
+  .win-photo{width:340px; height:340px; border-radius:50%; object-fit:cover; border:8px solid #fff; box-shadow:0 24px 70px rgba(0,0,0,.18);}
+  .win-medal{font-size:220px; line-height:1;}
   .win-name{font-family:'Big Shoulders Display', sans-serif; font-size:56px; font-weight:800; color:var(--turquoise); margin-top:14px;}
   .win-cocktail{font-size:28px; color:var(--text); margin-top:4px;}
 
-  table.board{border-collapse:collapse; margin-top:34px; font-size:24px; width:100%; max-width:900px;}
+  table.board{border-collapse:collapse; margin-top:34px; font-size:24px; width:100%; max-width:960px;}
   table.board th{color:var(--muted); font-size:16px; text-transform:uppercase; letter-spacing:.06em; padding:8px 14px; text-align:left;}
   table.board td{padding:14px; border-top:1px solid var(--line); vertical-align:middle;}
   table.board .rank{font-family:'Big Shoulders Display', sans-serif; font-size:32px; color:var(--pink);}
   table.board .avg{font-family:'Big Shoulders Display', sans-serif; font-size:30px; color:var(--turquoise); text-align:right;}
-  table.board img{width:56px; height:56px; border-radius:12px; object-fit:cover; margin-right:12px; vertical-align:middle;}
+  table.board img{width:88px; height:88px; border-radius:16px; object-fit:cover; margin-right:16px; vertical-align:middle;}
 
   .conn-dot{position:fixed; top:20px; right:24px; width:14px; height:14px; border-radius:50%; background:#e0a; opacity:.5;}
   .conn-dot.live{background:var(--green); opacity:1;}
@@ -190,7 +200,8 @@ function render(){
     document.getElementById('setupChips').innerHTML = state.participants.map((p, idx) => {
       const cocktail = p.cocktail && p.cocktail.trim() ? esc(p.cocktail) : '<span style="opacity:.4">Коктейль №'+(idx+1)+'</span>';
       const name = p.name && p.name.trim() ? esc(p.name) : '<span style="opacity:.4">имя не введено</span>';
-      return '<div class="chip">' + cocktail + '<span class="who">' + name + '</span></div>';
+      const photo = p.photo ? '<img class="chip-photo" src="'+p.photo+'">' : '<div class="chip-photo-placeholder">🍹</div>';
+      return '<div class="chip">' + photo + '<div class="cocktail-name-line">' + cocktail + '</div><span class="who">' + name + '</span></div>';
     }).join('');
     return;
   }
