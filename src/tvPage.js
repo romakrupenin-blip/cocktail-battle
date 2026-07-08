@@ -135,36 +135,22 @@ let state = null;
 let hostConnected = false;
 let ws = null;
 let reconnectDelay = 1000;
-let lastActivity = Date.now();
-let pingTimer = null;
-let watchdogTimer = null;
 
 function esc(s){ return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
-function startHeartbeat(){
-  clearInterval(pingTimer);
-  clearInterval(watchdogTimer);
-  pingTimer = setInterval(() => {
-    if(ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({type:'ping'}));
-  }, 15000);
-  watchdogTimer = setInterval(() => {
-    if(Date.now() - lastActivity > 25000){
-      console.warn('Соединение выглядит "зависшим", переподключаюсь...');
-      try{ ws.close(); }catch(e){}
-    }
-  }, 5000);
-}
+let photoCache = {};
+function photoFor(p){ return (p && photoCache[p.id]) || ''; }
 
 function connect(){
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   ws = new WebSocket(proto + '//' + location.host + '/room/' + ROOM_CODE + '/ws?role=tv');
-  ws.onopen = () => { document.getElementById('connDot').classList.add('live'); reconnectDelay = 1000; lastActivity = Date.now(); startHeartbeat(); };
-  ws.onclose = () => { document.getElementById('connDot').classList.remove('live'); clearInterval(pingTimer); clearInterval(watchdogTimer); setTimeout(connect, reconnectDelay); reconnectDelay = Math.min(reconnectDelay*1.5, 8000); };
+  ws.onopen = () => { document.getElementById('connDot').classList.add('live'); reconnectDelay = 1000; };
+  ws.onclose = () => { document.getElementById('connDot').classList.remove('live'); setTimeout(connect, reconnectDelay); reconnectDelay = Math.min(reconnectDelay*1.5, 8000); };
   ws.onerror = () => { try{ ws.close(); }catch(e){} };
   ws.onmessage = (evt) => {
-    lastActivity = Date.now();
     const msg = JSON.parse(evt.data);
     if(msg.type === 'pong') return;
+    if(msg.type === 'photo'){ photoCache[msg.id] = msg.photo; render(); return; }
     if(msg.type === 'state'){ state = msg.data; hostConnected = msg.hostConnected; render(); }
     else if(msg.type === 'meta'){ hostConnected = msg.hostConnected; render(); }
   };
@@ -201,7 +187,7 @@ function render(){
     document.getElementById('setupChips').innerHTML = state.participants.map((p, idx) => {
       const cocktail = p.cocktail && p.cocktail.trim() ? esc(p.cocktail) : '<span style="opacity:.4">Коктейль №'+(idx+1)+'</span>';
       const name = p.name && p.name.trim() ? esc(p.name) : '<span style="opacity:.4">имя не введено</span>';
-      const photo = p.photo ? '<img class="chip-photo" src="'+p.photo+'">' : '<div class="chip-photo-placeholder">🍹</div>';
+      const photo = photoFor(p) ? '<img class="chip-photo" src="'+photoFor(p)+'">' : '<div class="chip-photo-placeholder">🍹</div>';
       return '<div class="chip">' + photo + '<div class="cocktail-name-line">' + cocktail + '</div><span class="who">' + name + '</span></div>';
     }).join('');
     return;
@@ -217,8 +203,8 @@ function render(){
       const done = ratings.filter(r=>r.value>0).length;
       document.getElementById('spotProgress').textContent = done + ' / ' + ratings.length + ' оценок';
       const wrap = document.getElementById('spotPhotoWrap');
-      wrap.innerHTML = author.photo
-        ? '<img class="spot-photo" src="'+author.photo+'">'
+      wrap.innerHTML = photoFor(author)
+        ? '<img class="spot-photo" src="'+photoFor(author)+'">'
         : '<div class="spot-photo-placeholder">🍹</div>';
     }
     return;
@@ -231,12 +217,12 @@ function render(){
     document.getElementById('winName').textContent = winner ? winner.author.name : '';
     document.getElementById('winCocktail').textContent = winner ? winner.author.cocktail : '';
     const wrap = document.getElementById('winPhotoWrap');
-    wrap.innerHTML = winner && winner.author.photo
-      ? '<img class="win-photo" src="'+winner.author.photo+'">'
+    wrap.innerHTML = winner && photoFor(winner.author)
+      ? '<img class="win-photo" src="'+photoFor(winner.author)+'">'
       : '<div class="win-medal">🏆</div>';
     document.getElementById('boardBody').innerHTML = results.map((r,idx) => (
       '<tr><td class="rank">'+(idx+1)+'</td>' +
-      '<td>' + (r.author.photo ? '<img src="'+r.author.photo+'">' : '') +
+      '<td>' + (photoFor(r.author) ? '<img src="'+photoFor(r.author)+'">' : '') +
         esc(r.author.cocktail) + ' <span style="color:var(--muted); font-size:18px;">— '+esc(r.author.name)+'</span></td>' +
       '<td class="avg">'+(r.avg? r.avg.toFixed(2):'—')+'</td></tr>'
     )).join('');

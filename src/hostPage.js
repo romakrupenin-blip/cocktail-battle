@@ -42,34 +42,24 @@ const ROOM_CODE = ${JSON.stringify(roomCode)};
 let state = null;
 let ws = null;
 let reconnectDelay = 1000;
-let lastActivity = Date.now();
-let pingTimer = null;
-let watchdogTimer = null;
-
-function startHeartbeat(){
-  clearInterval(pingTimer);
-  clearInterval(watchdogTimer);
-  pingTimer = setInterval(() => {
-    if(ws && ws.readyState === WebSocket.OPEN) send({type:'ping'});
-  }, 15000);
-  watchdogTimer = setInterval(() => {
-    if(Date.now() - lastActivity > 25000){
-      console.warn('Соединение выглядит "зависшим", переподключаюсь...');
-      try{ ws.close(); }catch(e){}
-    }
-  }, 5000);
-}
 
 function connect(){
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   ws = new WebSocket(proto + '//' + location.host + '/room/' + ROOM_CODE + '/ws?role=host');
-  ws.onopen = () => { document.getElementById('connBanner').classList.remove('show'); reconnectDelay = 1000; lastActivity = Date.now(); startHeartbeat(); };
-  ws.onclose = () => { document.getElementById('connBanner').classList.add('show'); clearInterval(pingTimer); clearInterval(watchdogTimer); setTimeout(connect, reconnectDelay); reconnectDelay = Math.min(reconnectDelay*1.5, 8000); };
+  ws.onopen = () => { document.getElementById('connBanner').classList.remove('show'); reconnectDelay = 1000; };
+  ws.onclose = () => { document.getElementById('connBanner').classList.add('show'); setTimeout(connect, reconnectDelay); reconnectDelay = Math.min(reconnectDelay*1.5, 8000); };
   ws.onerror = () => { try{ ws.close(); }catch(e){} };
   ws.onmessage = (evt) => {
-    lastActivity = Date.now();
+    console.time('state');
     const msg = JSON.parse(evt.data);
-    if(msg.type === 'pong') return;
+    if(msg.type === 'pong'){ console.timeEnd('state'); return; }
+    if(msg.type === 'photo'){
+      photoCache[msg.id] = msg.photo;
+      const activeIsTextInput = document.activeElement && document.activeElement.tagName === 'INPUT' && document.activeElement.type === 'text';
+      if(!activeIsTextInput) render();
+      console.timeEnd('state');
+      return;
+    }
     if(msg.type === 'state'){
       const firstLoad = (state === null);
       state = msg.data;
@@ -77,18 +67,28 @@ function connect(){
         document.getElementById('partyTitle').textContent = state.partyName.trim() || 'Вечеринка коктейлей';
       }
       const activeIsTextInput = document.activeElement && document.activeElement.tagName === 'INPUT' && document.activeElement.type === 'text';
-      if(firstLoad || !activeIsTextInput) render();
+      if(suppressRenderCount > 0){ suppressRenderCount--; }
+      else if(firstLoad || !activeIsTextInput) render();
     }
+    console.timeEnd('state');
   };
 }
 function send(action){
+  console.time('send');
   if(ws && ws.readyState === WebSocket.OPEN){
     ws.send(JSON.stringify(action));
   }
+  console.timeEnd('send');
 }
 
 function esc(s){ return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 function escAttr(s){ return esc(s); }
+
+// Фото хранятся отдельно от основного state и приходят редкими сообщениями
+// (не в каждой рассылке состояния) — иначе разбор большого JSON с base64
+// фото на слабых телефонах блокирует главный поток на каждое действие.
+let photoCache = {};
+function photoFor(p){ return (p && photoCache[p.id]) || ''; }
 
 // ---------- DEBOUNCE (не заваливаем сервер/ТВ на каждую букву при печати) ----------
 let pendingTimers = {};
@@ -136,16 +136,16 @@ function handlePhotoChange(id, input){
   reader.onload = function(e){
     const img = new Image();
     img.onload = function(){
-      const maxDim = 480;
+      const maxDim = 360;
       let w = img.width, h = img.height;
       if(w > h && w > maxDim){ h = Math.round(h * maxDim/w); w = maxDim; }
       else if(h >= w && h > maxDim){ w = Math.round(w * maxDim/h); h = maxDim; }
       const canvas = document.createElement('canvas');
       canvas.width = w; canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      const compressed = canvas.toDataURL('image/jpeg', 0.72);
+      const compressed = canvas.toDataURL('image/jpeg', 0.6);
       const p = state.participants.find(p=>p.id===id);
-      if(p){ p.photo = compressed; send({type:'setPhoto', id, photo: compressed}); render(); }
+      if(p){ photoCache[id] = compressed; send({type:'setPhoto', id, photo: compressed}); render(); }
     };
     img.src = e.target.result;
   };
@@ -196,10 +196,41 @@ function openLightbox(src){
 function closeLightbox(){
   document.getElementById('lightbox').classList.remove('open');
 }
+let suppressRenderCount = 0;
 function setScore(raterId, authorId, value){
   state.scores[raterId+'_'+authorId] = value;
   send({type:'setScore', raterId, authorId, value});
-  render();
+  updateScoreDisplay(raterId, authorId, value);
+  suppressRenderCount++;
+}
+function updateScoreDisplay(raterId, authorId, value){
+  // Точечное обновление вместо полного render() всего экрана —
+  // на слабых телефонах полная пересборка DOM на каждый тап по звезде
+  // ощутимо лагала (особенно при большом числе участников/фото).
+  const starsEl = document.querySelector('.stars[data-rater="'+raterId+'"][data-author="'+authorId+'"]');
+  if(starsEl) starsEl.outerHTML = starsHTML(value, raterId, authorId);
+
+  const ratings = ratingsFor(authorId);
+  const doneCount = ratings.filter(r=>r.value>0).length;
+  const card = document.querySelector('.cocktail-card[data-author="'+authorId+'"] .progress-pill');
+  if(card){
+    card.textContent = doneCount + '/' + ratings.length;
+    card.classList.toggle('done', doneCount === ratings.length);
+  }
+
+  const resultsBtn = document.getElementById('resultsBtn');
+  if(resultsBtn) resultsBtn.disabled = !allRatingsDone();
+
+  const hint = document.getElementById('scoringHint');
+  if(hint){
+    if(allRatingsDone()){
+      hint.textContent = 'Все оценки собраны — можно смотреть результаты ✓';
+      hint.style.color = 'var(--green)';
+    } else {
+      hint.textContent = 'Осталось оценок: ' + missingRatingsCount() + ' — результаты откроются, когда все коктейли оценят все участники.';
+      hint.style.color = 'var(--red)';
+    }
+  }
 }
 function ratingsFor(authorId){
   return state.participants
@@ -237,7 +268,7 @@ function backToScoring(){ flushPending(); state.view='scoring'; send({type:'back
 // ---------- STAR RENDERING ----------
 const STAR_PATH = "M12 2.6l2.85 6.2 6.75.62-5.1 4.55 1.52 6.63L12 17.9l-6.02 3.7 1.52-6.63-5.1-4.55 6.75-.62L12 2.6z";
 function starsHTML(value, raterId, authorId){
-  let html = '<div class="stars">';
+  let html = \`<div class="stars" data-rater="\${raterId}" data-author="\${authorId}">\`;
   for(let i=1;i<=5;i++){
     const fillPct = value >= i ? 100 : (value >= i-0.5 ? 50 : 0);
     html += \`
@@ -254,11 +285,13 @@ function starsHTML(value, raterId, authorId){
 
 // ---------- RENDER ----------
 function render(){
+  console.time('render');
   closeLightbox();
   const root = document.getElementById('viewRoot');
   if(state.view==='setup') root.innerHTML = renderSetup();
   else if(state.view==='scoring') root.innerHTML = renderScoring();
   else root.innerHTML = renderResults();
+  console.timeEnd('render');
 }
 
 function renderSetup(){
@@ -266,7 +299,7 @@ function renderSetup(){
     <div class="participant-row">
       <div class="idx">\${idx+1}</div>
       <label class="photo-upload" title="Фото коктейля">
-        \${p.photo ? \`<img src="\${p.photo}">\` : \`<svg viewBox="0 0 24 24" fill="none" stroke="#B8A6A9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.2"/><path d="M8 6l1.4-2h5.2L16 6"/></svg>\`}
+        \${photoFor(p) ? \`<img src="\${photoFor(p)}">\` : \`<svg viewBox="0 0 24 24" fill="none" stroke="#B8A6A9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.2"/><path d="M8 6l1.4-2h5.2L16 6"/></svg>\`}
         <input type="file" accept="image/*" onchange="handlePhotoChange('\${p.id}', this)">
       </label>
       <div class="inputs">
@@ -319,10 +352,10 @@ function renderScoring(){
     \`).join('');
 
     return \`
-      <div class="cocktail-card \${isOpen?'open':''}">
+      <div class="cocktail-card \${isOpen?'open':''}" data-author="\${author.id}">
         <div class="cocktail-head" onclick="toggleCard('\${author.id}')">
           <div class="cocktail-head-main">
-            \${author.photo ? \`<img class="cocktail-thumb" src="\${author.photo}">\` : ''}
+            \${photoFor(author) ? \`<img class="cocktail-thumb" src="\${photoFor(author)}">\` : ''}
             <div class="cocktail-text">
               <div class="cocktail-name">\${esc(author.cocktail)}</div>
               <div class="cocktail-author">\${esc(author.name)}</div>
@@ -334,7 +367,7 @@ function renderScoring(){
           </div>
         </div>
         <div class="rater-list">
-          \${author.photo ? \`<img class="cocktail-thumb-large" src="\${author.photo}" onclick="openLightbox('\${author.photo}')">\` : ''}
+          \${photoFor(author) ? \`<img class="cocktail-thumb-large" src="\${photoFor(author)}" onclick="openLightbox('\${photoFor(author)}')">\` : ''}
           \${raterRows}
         </div>
       </div>
@@ -345,11 +378,11 @@ function renderScoring(){
     <div class="screen active">
       <div class="top-nav">
         <button class="btn btn-ghost" onclick="backToSetup()">← Участники</button>
-        <button class="btn btn-ghost" onclick="goToResults()" \${allRatingsDone()?'':'disabled'}>Результаты →</button>
+        <button id="resultsBtn" class="btn btn-ghost" onclick="goToResults()" \${allRatingsDone()?'':'disabled'}>Результаты →</button>
       </div>
       \${allRatingsDone()
-        ? '<p class="hint" style="color:var(--green); font-weight:600;">Все оценки собраны — можно смотреть результаты ✓</p>'
-        : '<p class="hint" style="color:var(--red); font-weight:600;">Осталось оценок: ' + missingRatingsCount() + ' — результаты откроются, когда все коктейли оценят все участники.</p>'}
+        ? '<p id="scoringHint" class="hint" style="color:var(--green); font-weight:600;">Все оценки собраны — можно смотреть результаты ✓</p>'
+        : '<p id="scoringHint" class="hint" style="color:var(--red); font-weight:600;">Осталось оценок: ' + missingRatingsCount() + ' — результаты откроются, когда все коктейли оценят все участники.</p>'}
       <p class="hint">Нажмите на коктейль, чтобы развернуть список и выставить оценки. Экран ТВ показывает текущий развёрнутый коктейль.</p>
       \${cards}
     </div>
@@ -369,8 +402,8 @@ function renderResults(){
     banner = \`
       <div class="winner-banner">
         <div class="winner-title">ПОБЕДИТЕЛЬ!!!</div>
-        \${w.author.photo
-          ? \`<div class="winner-photo-wrap"><img class="winner-photo" src="\${w.author.photo}"><span class="medal-badge">🏆</span></div>\`
+        \${photoFor(w.author)
+          ? \`<div class="winner-photo-wrap"><img class="winner-photo" src="\${photoFor(w.author)}"><span class="medal-badge">🏆</span></div>\`
           : '<div class="medal">🏆</div>'}
         <div class="wname">\${esc(w.author.name)}</div>
         <div class="wcocktail">\${esc(w.author.cocktail)}</div>
@@ -391,7 +424,7 @@ function renderResults(){
       <td class="rank">\${idx+1}</td>
       <td>
         <div class="lb-cell-main">
-          \${r.author.photo ? \`<img class="lb-thumb" src="\${r.author.photo}">\` : ''}
+          \${photoFor(r.author) ? \`<img class="lb-thumb" src="\${photoFor(r.author)}">\` : ''}
           <div>
             <div class="lb-cocktail">\${esc(r.author.cocktail)}</div>
             <div class="lb-author">\${esc(r.author.name)}</div>

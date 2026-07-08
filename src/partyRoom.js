@@ -31,7 +31,13 @@ export class PartyRoom {
     const session = { ws: server, role };
     this.sessions.add(session);
 
-    this.sendTo(session, { type: 'state', data: this.data, hostConnected: this.hostConnected() });
+    // "Лёгкое" состояние — без байтов фото, чтобы разбор JSON на слабых
+    // телефонах не блокировал главный поток на каждое действие.
+    this.sendTo(session, { type: 'state', data: this.thinData(), hostConnected: this.hostConnected() });
+    // Фото досылаем отдельно, каждое своим сообщением — сразу после подключения.
+    for (const p of this.data.participants) {
+      if (p.photo) this.sendTo(session, { type: 'photo', id: p.id, photo: p.photo });
+    }
     this.broadcastMeta();
 
     server.addEventListener('message', (evt) => {
@@ -51,6 +57,15 @@ export class PartyRoom {
     return false;
   }
 
+  // Копия состояния без байтов фото — то, что реально гоняется туда-сюда
+  // на каждое действие (ввод текста, оценка и т.д.)
+  thinData() {
+    return {
+      ...this.data,
+      participants: this.data.participants.map(p => ({ ...p, photo: '' }))
+    };
+  }
+
   async onMessage(session, evt) {
     let action;
     try { action = JSON.parse(evt.data); } catch (e) { return; }
@@ -64,10 +79,19 @@ export class PartyRoom {
     // Только ведущий (role=host) может менять состояние — ТВ всегда read-only.
     if (session.role !== 'host') return;
 
+    const isPhotoAction = action.type === 'setPhoto';
+
     try {
       applyAction(this.data, action);
       await this.ctx.storage.put('data', this.data);
       this.broadcastState();
+      if (isPhotoAction) {
+        const p = this.data.participants.find(p => p.id === action.id);
+        if (p && p.photo) {
+          const payload = { type: 'photo', id: p.id, photo: p.photo };
+          for (const s of this.sessions) this.sendTo(s, payload);
+        }
+      }
     } catch (err) {
       // Не даём одному сбойному действию "уронить" всю комнату молча —
       // логируем и сообщаем самому отправителю, остальные подключения не рвём.
@@ -82,7 +106,7 @@ export class PartyRoom {
   }
 
   broadcastState() {
-    const payload = { type: 'state', data: this.data, hostConnected: this.hostConnected() };
+    const payload = { type: 'state', data: this.thinData(), hostConnected: this.hostConnected() };
     for (const s of this.sessions) this.sendTo(s, payload);
   }
 
@@ -91,3 +115,4 @@ export class PartyRoom {
     for (const s of this.sessions) this.sendTo(s, payload);
   }
 }
+
