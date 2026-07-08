@@ -17,7 +17,7 @@
   body{
     background: radial-gradient(circle at 50% -10%, #FFFFFF 0%, var(--bg) 60%);
     color: var(--cream);
-    font-family:'Work Sans', sans-serif;
+    font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
     min-height:100vh;
     -webkit-tap-highlight-color: transparent;
   }
@@ -51,7 +51,7 @@
     color: var(--gold); font-weight:600;
   }
   h1{
-    font-family:'Big Shoulders Display', sans-serif;
+    font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
     font-weight:800;
     font-size:26px;
     line-height:1;
@@ -68,7 +68,7 @@
     background: var(--bg-card);
     border:1px solid var(--line);
     color: var(--cream);
-    font-family:'Work Sans', sans-serif;
+    font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
     font-size:16px;
     padding:12px 14px;
     border-radius:10px;
@@ -79,14 +79,14 @@
   input[type=text]::placeholder{color:#C9B7B9;}
 
   .section-title{
-    font-family:'Big Shoulders Display', sans-serif;
+    font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
     font-size:19px; font-weight:700;
     color: var(--gold-soft);
     display:flex; align-items:center; justify-content:space-between;
     margin-bottom: -6px;
   }
   .counter-pill{
-    font-family:'Work Sans', sans-serif;
+    font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
     font-size:12px; font-weight:600; color:var(--muted);
     background: var(--bg-card); border:1px solid var(--line);
     padding:3px 9px; border-radius:999px;
@@ -100,7 +100,7 @@
     padding:10px;
   }
   .participant-row .idx{
-    font-family:'Big Shoulders Display', sans-serif;
+    font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
     color: var(--gold);
     font-size:20px; width:22px; text-align:center; flex:0 0 auto;
   }
@@ -126,7 +126,7 @@
 
   .btn{
     border:none; border-radius:12px; padding:14px 18px;
-    font-family:'Work Sans', sans-serif; font-weight:600; font-size:15px;
+    font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; font-weight:600; font-size:15px;
     cursor:pointer; width:100%;
     display:flex; align-items:center; justify-content:center; gap:8px;
   }
@@ -162,7 +162,7 @@
     gap:10px;
   }
   .cocktail-name{
-    font-family:'Big Shoulders Display', sans-serif;
+    font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
     font-size:20px; font-weight:700; color:var(--cream);
   }
   .cocktail-author{font-size:12px; color:var(--muted); margin-top:2px;}
@@ -224,7 +224,7 @@
   }
   .winner-banner .medal{font-size:136px; line-height:1;}
   .winner-title{
-    font-family:'Big Shoulders Display', sans-serif;
+    font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
     font-size:22px; font-weight:900; letter-spacing:.04em;
     color: var(--gold); margin-bottom:6px;
   }
@@ -238,7 +238,7 @@
     position:absolute; right:-24px; bottom:-18px; font-size:88px; line-height:1;
   }
   .winner-banner .wname{
-    font-family:'Big Shoulders Display', sans-serif;
+    font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
     font-size:26px; font-weight:800; color: var(--gold-soft); margin-top:4px;
   }
   .winner-banner .wcocktail{font-size:14px; color:var(--cream); margin-top:2px;}
@@ -251,13 +251,13 @@
   }
   table.leaderboard td{padding:10px 8px; border-bottom:1px solid var(--line); vertical-align:middle;}
   table.leaderboard tr:last-child td{border-bottom:none;}
-  .rank{font-family:'Big Shoulders Display', sans-serif; font-size:18px; color:var(--gold);}
+  .rank{font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; font-size:18px; color:var(--gold);}
   .lb-cocktail{font-weight:600;}
   .lb-thumb{width:32px; height:32px; border-radius:8px; object-fit:cover; border:1px solid var(--line); flex:0 0 auto;}
   .lb-cell-main{display:flex; align-items:center; gap:8px;}
   .lb-author{color:var(--muted); font-size:12px;}
-  .lb-sum{font-family:'Big Shoulders Display', sans-serif; font-size:16px; color:var(--muted); text-align:right;}
-  .lb-avg{font-family:'Big Shoulders Display', sans-serif; font-size:18px; color:var(--gold-soft); text-align:right;}
+  .lb-sum{font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; font-size:16px; color:var(--muted); text-align:right;}
+  .lb-avg{font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; font-size:18px; color:var(--gold-soft); text-align:right;}
   .lb-count{color:var(--muted); font-size:11px; text-align:right;}
 
   .empty-note{

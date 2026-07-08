@@ -1,11 +1,10 @@
-export function tvPage(code, qrSvg) {
+export function tvPage(code, qrSvg, hostUrl) {
   return `<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cocktail Battle — экран</title>
-<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg: #FCF7F4;
@@ -21,7 +20,7 @@ export function tvPage(code, qrSvg) {
   body{
     background: radial-gradient(circle at 50% -10%, #FFFFFF 0%, var(--bg) 60%);
     color: var(--text);
-    font-family:'Work Sans', sans-serif;
+    font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
     height:100vh; width:100vw;
     display:flex; align-items:center; justify-content:center;
     overflow:hidden;
@@ -30,20 +29,20 @@ export function tvPage(code, qrSvg) {
   .stage.active{display:flex;}
 
   .eyebrow{font-size:22px; letter-spacing:.16em; text-transform:uppercase; color:var(--pink); font-weight:700; margin-bottom:10px;}
-  h1{font-family:'Big Shoulders Display', sans-serif; font-size:64px; font-weight:900; margin:0 0 20px; color:var(--text);}
+  h1{font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; font-size:64px; font-weight:900; margin:0 0 20px; color:var(--text);}
 
   /* lobby */
   .qr-box{background:#fff; border-radius:28px; padding:28px; box-shadow:0 20px 60px rgba(0,0,0,.08); border:1px solid var(--line);}
   .qr-box svg{display:block; width:320px; height:320px;}
   .code-badge{
-    margin-top:22px; font-family:'Big Shoulders Display', sans-serif; font-size:34px; font-weight:800;
+    margin-top:22px; font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; font-size:34px; font-weight:800;
     letter-spacing:.1em; color:var(--turquoise); background:#fff; border:1px solid var(--line);
     padding:10px 28px; border-radius:999px;
   }
   .lobby-hint{margin-top:18px; font-size:22px; color:var(--muted);}
 
   /* setup */
-  .party-count{font-family:'Big Shoulders Display', sans-serif; font-size:120px; font-weight:900; color:var(--turquoise); line-height:1;}
+  .party-count{font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; font-size:120px; font-weight:900; color:var(--turquoise); line-height:1;}
   .party-count-label{font-size:26px; color:var(--muted); margin-top:6px;}
   .chip-row{display:flex; flex-wrap:wrap; gap:20px; justify-content:center; margin-top:34px; max-width:1200px;}
   .chip{
@@ -65,7 +64,7 @@ export function tvPage(code, qrSvg) {
     width:340px; height:340px; border-radius:32px; margin-bottom:30px;
     background:linear-gradient(135deg,#FFE3E8,#DFF5F6); display:flex; align-items:center; justify-content:center;
   }
-  .spot-cocktail{font-family:'Big Shoulders Display', sans-serif; font-size:72px; font-weight:800; line-height:1;}
+  .spot-cocktail{font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; font-size:72px; font-weight:800; line-height:1;}
   .spot-author{font-size:28px; color:var(--muted); margin-top:8px;}
   .spot-progress{
     margin-top:30px; font-size:28px; font-weight:700; color:var(--turquoise);
@@ -73,17 +72,17 @@ export function tvPage(code, qrSvg) {
   }
 
   /* results */
-  .win-title{font-family:'Big Shoulders Display', sans-serif; font-size:40px; font-weight:900; color:var(--pink); letter-spacing:.05em; margin-bottom:14px;}
+  .win-title{font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; font-size:40px; font-weight:900; color:var(--pink); letter-spacing:.05em; margin-bottom:14px;}
   .win-photo{width:340px; height:340px; border-radius:50%; object-fit:cover; border:8px solid #fff; box-shadow:0 24px 70px rgba(0,0,0,.18);}
   .win-medal{font-size:220px; line-height:1;}
-  .win-name{font-family:'Big Shoulders Display', sans-serif; font-size:56px; font-weight:800; color:var(--turquoise); margin-top:14px;}
+  .win-name{font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; font-size:56px; font-weight:800; color:var(--turquoise); margin-top:14px;}
   .win-cocktail{font-size:28px; color:var(--text); margin-top:4px;}
 
   table.board{border-collapse:collapse; margin-top:34px; font-size:24px; width:100%; max-width:960px;}
   table.board th{color:var(--muted); font-size:16px; text-transform:uppercase; letter-spacing:.06em; padding:8px 14px; text-align:left;}
   table.board td{padding:14px; border-top:1px solid var(--line); vertical-align:middle;}
-  table.board .rank{font-family:'Big Shoulders Display', sans-serif; font-size:32px; color:var(--pink);}
-  table.board .avg{font-family:'Big Shoulders Display', sans-serif; font-size:30px; color:var(--turquoise); text-align:right;}
+  table.board .rank{font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; font-size:32px; color:var(--pink);}
+  table.board .avg{font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; font-size:30px; color:var(--turquoise); text-align:right;}
   table.board img{width:88px; height:88px; border-radius:16px; object-fit:cover; margin-right:16px; vertical-align:middle;}
 
   .conn-dot{position:fixed; top:20px; right:24px; width:14px; height:14px; border-radius:50%; background:#e0a; opacity:.5;}
@@ -99,7 +98,9 @@ export function tvPage(code, qrSvg) {
   <h1>Отсканируйте, чтобы начать</h1>
   <div class="qr-box">${qrSvg}</div>
   <div class="code-badge">${code}</div>
+  <div class="lobby-hint" style="font-size:14px; opacity:.7; word-break:break-all; max-width:500px;">Или вручную: ${hostUrl}</div>
   <div class="lobby-hint">Ведущий сканирует QR своим телефоном и вносит участников</div>
+  <div class="lobby-hint" style="font-size:16px; margin-top:6px;">Совет: сканируйте через сканер в Chrome — стандартная камера некоторых телефонов иногда зависает на открытии ссылки</div>
 </div>
 
 <div class="stage" id="stage-setup">
